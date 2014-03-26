@@ -1,7 +1,7 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN">
+
 <html>
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=Cp1252">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<title>Manage Storage Locations</title>
 	<link rel="stylesheet" type="text/css" href="ManageMovies.css">
 <?php
@@ -51,31 +51,41 @@ function test_input($data)
 			else
 			{
 				// Figure out how many locations are in the new container, and make entries for them
-				// FINISH ME - Add the specific section/slot values for each location
 				$results = mysqli_query($con, "SELECT Sections, Slots FROM container_types WHERE Name = '$type'");
 				$row = mysqli_fetch_array($results);
-				$totalslots = $row[0] * $row[1];
-				for ($x = 0; $x < $totalslots; $x++)
-					mysqli_query($con, "INSERT INTO locations (Container) VALUES ('$name')");
+				$sections = $row[0];
+				$slots = $row[1];
+				for ($section = 1; $section <= $sections; $section++)
+				{
+					for ($slot = 1; $slot <= $slots; $slot++)
+					{
+						mysqli_query($con, "INSERT INTO locations (Container, Section, Slot) VALUES ('$name','$section','$slot')");
+					}
+				}
 			}
+			mysqli_free_result($result);
 		}
 	}
 ?>
 <hr>
 <h2>Currently available Containers:</h2>
 <?php	
-	$result = mysqli_query($con, "SELECT * FROM containers");
+	$result = mysqli_query($con,
+		"SELECT containers.Name, containers.Type, COUNT(*) as 'Total Slots', COUNT(*) - Count(DISTINCT Disk) as 'Empty Slots' 
+		FROM locations, containers 
+		WHERE locations.Container = containers.Name
+		GROUP BY containers.Name");
 	$fields = mysqli_fetch_fields($result);
 	$numfields = count($fields);
 	echo '<table border="1">';
 	foreach ($fields as $field)
 		echo "<th>" . $field->name . "</th>";
 	echo "\n";
-	while ($row = mysqli_fetch_array($result))
+	while ($row = mysqli_fetch_array($result, MYSQLI_NUM))
 	{
 		echo "\t<tr>";
 		for ($x = 0; $x < $numfields; $x++)
-			echo "<td>" . $row[$x] . "</td>";
+			echo '<td>' . $row[$x] . '</td>';
 		echo "</tr>\n";
 	}
 	echo "</table>";
